@@ -1,150 +1,172 @@
-import {defer, isXml, parse} from "./core";
-import Path from "./path";
+import { defer, isXml, parse } from './core'
+import Path from './path'
 
-function request(url, type, withCredentials, headers) {
-	var supportsURL = (typeof window != "undefined") ? window.URL : false; // TODO: fallback for url if window isn't defined
-	var BLOB_RESPONSE = supportsURL ? "blob" : "arraybuffer";
+function request (url, type, withCredentials, headers, trackProgress, book) {
+  const supportsURL = (typeof window !== 'undefined') ? window.URL : false // TODO: fallback for url if window isn't defined
+  const BLOB_RESPONSE = supportsURL ? 'blob' : 'arraybuffer'
 
-	var deferred = new defer();
+  const deferred = new defer()
 
-	var xhr = new XMLHttpRequest();
+  const xhr = new XMLHttpRequest()
 
-	//-- Check from PDF.js:
-	//   https://github.com/mozilla/pdf.js/blob/master/web/compatibility.js
-	var xhrPrototype = XMLHttpRequest.prototype;
+  // -- Check from PDF.js:
+  //   https://github.com/mozilla/pdf.js/blob/master/web/compatibility.js
+  const xhrPrototype = XMLHttpRequest.prototype
 
-	var header;
+  let header
 
-	if (!("overrideMimeType" in xhrPrototype)) {
-		// IE10 might have response, but not overrideMimeType
-		Object.defineProperty(xhrPrototype, "overrideMimeType", {
-			value: function xmlHttpRequestOverrideMimeType() {}
-		});
-	}
+  if (!('overrideMimeType' in xhrPrototype)) {
+    // IE10 might have response, but not overrideMimeType
+    Object.defineProperty(xhrPrototype, 'overrideMimeType', {
+      value: function xmlHttpRequestOverrideMimeType () {}
+    })
+  }
 
-	if(withCredentials) {
-		xhr.withCredentials = true;
-	}
+  if (withCredentials) {
+    xhr.withCredentials = true
+  }
 
-	xhr.onreadystatechange = handler;
-	xhr.onerror = err;
+  if (trackProgress && book) {
+    function updateProgress (oEvent) {
+      if (oEvent.lengthComputable) {
+        const percentComplete = Math.round(oEvent.loaded * 100 / oEvent.total)
+        book.emit('book:downloadProgress', percentComplete)
+      } else {}
+    }
 
-	xhr.open("GET", url, true);
+    xhr.addEventListener('progress', updateProgress)
 
-	for(header in headers) {
-		xhr.setRequestHeader(header, headers[header]);
-	}
+    function transferComplete (oEvent) {
+      book.emit('book:downloadProgress', 100)
+    }
 
-	if(type == "json") {
-		xhr.setRequestHeader("Accept", "application/json");
-	}
+    function transferFailed (oEvent) {
+      book.emit('book:downloadProgressError', true)
+    }
 
-	// If type isn"t set, determine it from the file extension
-	if(!type) {
-		type = new Path(url).extension;
-	}
+    function transferCanceled (oEvent) {
+      book.emit('book:downloadProgressError', true)
+    }
 
-	if(type == "blob"){
-		xhr.responseType = BLOB_RESPONSE;
-	}
+    xhr.addEventListener('load', transferComplete)
+    xhr.addEventListener('error', transferFailed)
+    xhr.addEventListener('abort', transferCanceled)
+  }
 
+  xhr.onreadystatechange = handler
+  xhr.onerror = err
 
-	if(isXml(type)) {
-		// xhr.responseType = "document";
-		xhr.overrideMimeType("text/xml"); // for OPF parsing
-	}
+  xhr.open('GET', url, true)
 
-	if(type == "xhtml") {
-		// xhr.responseType = "document";
-	}
+  for (header in headers) {
+    xhr.setRequestHeader(header, headers[header])
+  }
 
-	if(type == "html" || type == "htm") {
-		// xhr.responseType = "document";
-	}
+  if (type == 'json') {
+    xhr.setRequestHeader('Accept', 'application/json')
+  }
 
-	if(type == "binary") {
-		xhr.responseType = "arraybuffer";
-	}
+  // If type isn"t set, determine it from the file extension
+  if (!type) {
+    type = new Path(url).extension
+  }
 
-	xhr.send();
+  if (type == 'blob') {
+    xhr.responseType = BLOB_RESPONSE
+  }
 
-	function err(e) {
-		deferred.reject(e);
-	}
+  if (isXml(type)) {
+    // xhr.responseType = "document";
+    xhr.overrideMimeType('text/xml') // for OPF parsing
+  }
 
-	function handler() {
-		if (this.readyState === XMLHttpRequest.DONE) {
-			var responseXML = false;
+  if (type == 'xhtml') {
+    // xhr.responseType = "document";
+  }
 
-			if(this.responseType === "" || this.responseType === "document") {
-				responseXML = this.responseXML;
-			}
+  if (type == 'html' || type == 'htm') {
+    // xhr.responseType = "document";
+  }
 
-			if (this.status === 200 || this.status === 0 || responseXML) { //-- Firefox is reporting 0 for blob urls
-				var r;
+  if (type == 'binary') {
+    xhr.responseType = 'arraybuffer'
+  }
 
-				if (!this.response && !responseXML) {
-					deferred.reject({
-						status: this.status,
-						message : "Empty Response",
-						stack : new Error().stack
-					});
-					return deferred.promise;
-				}
+  xhr.send()
 
-				if (this.status === 403) {
-					deferred.reject({
-						status: this.status,
-						response: this.response,
-						message : "Forbidden",
-						stack : new Error().stack
-					});
-					return deferred.promise;
-				}
-				if(responseXML){
-					r = this.responseXML;
-				} else
-				if(isXml(type)){
-					// xhr.overrideMimeType("text/xml"); // for OPF parsing
-					// If this.responseXML wasn't set, try to parse using a DOMParser from text
-					r = parse(this.response, "text/xml");
-				}else
-				if(type == "xhtml"){
-					r = parse(this.response, "application/xhtml+xml");
-				}else
-				if(type == "html" || type == "htm"){
-					r = parse(this.response, "text/html");
-				}else
-				if(type == "json"){
-					r = JSON.parse(this.response);
-				}else
-				if(type == "blob"){
+  function err (e) {
+    deferred.reject(e)
+  }
 
-					if(supportsURL) {
-						r = this.response;
-					} else {
-						//-- Safari doesn't support responseType blob, so create a blob from arraybuffer
-						r = new Blob([this.response]);
-					}
+  function handler () {
+    if (this.readyState === XMLHttpRequest.DONE) {
+      let responseXML = false
 
-				}else{
-					r = this.response;
-				}
+      if (this.responseType === '' || this.responseType === 'document') {
+        responseXML = this.responseXML
+      }
 
-				deferred.resolve(r);
-			} else {
+      if (this.status === 200 || this.status === 0 || responseXML) { // -- Firefox is reporting 0 for blob urls
+        let r
 
-				deferred.reject({
-					status: this.status,
-					message : this.response,
-					stack : new Error().stack
-				});
+        if (!this.response && !responseXML) {
+          deferred.reject({
+            status: this.status,
+            message: 'Empty Response',
+            stack: new Error().stack
+          })
+          return deferred.promise
+        }
 
-			}
-		}
-	}
+        if (this.status === 403) {
+          deferred.reject({
+            status: this.status,
+            response: this.response,
+            message: 'Forbidden',
+            stack: new Error().stack
+          })
+          return deferred.promise
+        }
+        if (responseXML) {
+          r = this.responseXML
+        } else
+        if (isXml(type)) {
+          // xhr.overrideMimeType("text/xml"); // for OPF parsing
+          // If this.responseXML wasn't set, try to parse using a DOMParser from text
+          r = parse(this.response, 'text/xml')
+        } else
+        if (type == 'xhtml') {
+          r = parse(this.response, 'application/xhtml+xml')
+        } else
+        if (type == 'html' || type == 'htm') {
+          r = parse(this.response, 'text/html')
+        } else
+        if (type == 'json') {
+          r = JSON.parse(this.response)
+        } else
+        if (type == 'blob') {
+          if (supportsURL) {
+            r = this.response
+          } else {
+            // -- Safari doesn't support responseType blob, so create a blob from arraybuffer
+            r = new Blob([this.response])
+          }
+        } else {
+          r = this.response
+        }
 
-	return deferred.promise;
+        deferred.resolve(r)
+      } else {
+        deferred.reject({
+          status: this.status,
+          message: this.response,
+          stack: new Error().stack
+        })
+      }
+    }
+  }
+
+  return deferred.promise
 }
 
-export default request;
+export default request
