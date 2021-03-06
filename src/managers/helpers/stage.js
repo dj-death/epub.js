@@ -1,4 +1,4 @@
-import { uuid, isNumber, isElement, windowBounds, extend } from '../../utils/core'
+import { uuid, isNumber, isElement, windowBounds, extend, getComputedStyleOf } from '../../utils/core'
 import throttle from 'lodash/throttle'
 
 class Stage {
@@ -198,7 +198,7 @@ class Stage {
       height = this.container.clientHeight
     }
 
-    this.containerStyles = window.getComputedStyle(this.container)
+    this.containerStyles = getComputedStyleOf(this.container)
 
     this.containerPadding = {
       left: parseFloat(this.containerStyles['padding-left']) || 0,
@@ -209,7 +209,7 @@ class Stage {
 
     // Bounds not set, get them from window
     const _windowBounds = windowBounds()
-    const bodyStyles = window.getComputedStyle(document.body)
+    const bodyStyles = getComputedStyleOf(document.body)
     const bodyPadding = {
       left: parseFloat(bodyStyles['padding-left']) || 0,
       right: parseFloat(bodyStyles['padding-right']) || 0,

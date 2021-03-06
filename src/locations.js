@@ -41,7 +41,6 @@ class Locations {
 	 */
 
   async generateAsync (chars) {
-    console.time('Generate Locations')
     if (chars) {
       this.break = chars
     }
@@ -89,9 +88,8 @@ class Locations {
 
             if (i === len - 1) {
               allCompleted.resolve(this._locations)
-              console.timeEnd('Generate Locations')
             }
-          }, this.pause)
+          }) /* , this.pause) */
         }
 
         resolve(allCompleted.promise)
@@ -100,7 +98,6 @@ class Locations {
   }
 
   generate (chars) {
-    console.time('Generate Locations')
     if (chars) {
       this.break = chars
     }
@@ -122,8 +119,6 @@ class Locations {
         this.currentLocation = this._currentCfi
       }
 
-      console.timeEnd('Generate Locations')
-
       return this._locations
       // console.log(this.percentage(this.book.rendition.location.start), this.percentage(this.book.rendition.location.end));
     }.bind(this))
@@ -139,13 +134,8 @@ class Locations {
   }
 
   process (section) {
-    // console.time('Generate Locations ' + (section.index + 1))
-    // console.time('Load of section ' + (section.index + 1))
-
     return section.load(this.request)
       .then(function (contents) {
-        // console.timeEnd('Load of section ' + (section.index + 1))
-
         const completed = new defer()
 
         return new Promise((resolve, reject) => {
@@ -158,15 +148,12 @@ class Locations {
           section.unload()
           this.processingTimeout = setTimeout(() => completed.resolve(locations), this.pause)
 
-          // console.timeEnd('Generate Locations ' + (section.index + 1))
           return completed.promise
         })
       }.bind(this))
   }
 
   parse (contents, cfiBase, chars, sectionIndex) {
-    // console.time('Parse of section ' + (sectionIndex + 1))
-
     const locations = []
     let range
     const doc = contents.ownerDocument
@@ -264,7 +251,6 @@ class Locations {
     }
 
     this.emit(EVENTS.LOCATIONS.PARSED, sectionIndex, this.sectionsCount)
-    // console.timeEnd('Parse of section ' + (sectionIndex + 1))
     return locations
   }
 

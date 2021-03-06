@@ -2,7 +2,8 @@ import EventEmitter from 'event-emitter'
 import {
   extend,
   defer,
-  isFloat
+  isFloat,
+  getComputedStyleOf
 } from './utils/core'
 import Hook from './utils/hook'
 import EpubCFI from './epubcfi'
@@ -962,7 +963,7 @@ class Rendition {
       })
     }
 
-    const computed = contents.window.getComputedStyle(contents.content, null)
+    const computed = getComputedStyleOf(contents.content, null, contents.window)
     const height = (contents.content.offsetHeight - (parseFloat(computed.paddingTop) + parseFloat(computed.paddingBottom))) * 0.95
     const horizontalPadding = parseFloat(computed.paddingLeft) + parseFloat(computed.paddingRight)
 

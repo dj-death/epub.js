@@ -264,8 +264,6 @@ class DefaultViewManager {
   }
 
   display (section, target) {
-    console.time('Display ' + (section.index + 1))
-
     const displaying = new defer()
     const displayed = displaying.promise
 
@@ -296,7 +294,6 @@ class DefaultViewManager {
       }
 
       displaying.resolve()
-      console.timeEnd('Display ' + (section.index + 1))
       return displayed
     }
 
@@ -335,7 +332,6 @@ class DefaultViewManager {
     // 	this.views.show();
     // }.bind(this));
 
-    console.timeEnd('Display ' + (section.index + 1))
     return displayed
   }
 
@@ -633,6 +629,8 @@ class DefaultViewManager {
   }
 
   currentLocation () {
+    this.updateLayout()
+    
     if (this.isPaginated && this.settings.axis === 'horizontal') {
       this.location = this.paginatedLocation()
     } else {

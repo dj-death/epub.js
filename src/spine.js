@@ -37,7 +37,59 @@ class Spine {
 	 * @param  {Packaging} _package
 	 * @param  {method} resolver URL resolver
 	 * @param  {method} canonical Resolve canonical url
-	 */
+	*/
+
+  createSpineItem (item, book) {
+    const manifestItem = this.manifest[item.idref]
+    const index = this.items.length
+
+    item.index = index
+    item.cfiBase = this.epubcfi.generateChapterComponent(this.spineNodeIndex, item.index, item.idref)
+
+    if (item.href) {
+      item.url = book.resolver.call(book, item.href, true)
+      item.canonical = book.canonical.call(book, item.href)
+    }
+
+    if (manifestItem) {
+      item.href = manifestItem.href
+      item.url = book.resolver.call(book, item.href, true)
+      item.canonical = book.canonical.call(book, item.href)
+
+      if (manifestItem.properties.length) {
+        item.properties.push.apply(item.properties, manifestItem.properties)
+      }
+    }
+
+    if (item.linear === 'yes') {
+      item.prev = function () {
+        let prevIndex = item.index
+        while (prevIndex > 0) {
+          const prev = this.get(prevIndex - 1)
+          if (prev && prev.linear) {
+            return prev
+          }
+          prevIndex -= 1
+        }
+      }.bind(this)
+      item.next = function () {
+        let nextIndex = item.index
+        while (nextIndex < this.spineItems.length - 1) {
+          const next = this.get(nextIndex + 1)
+          if (next && next.linear) {
+            return next
+          }
+          nextIndex += 1
+        }
+      }.bind(this)
+    } else {
+      item.prev = function () {}
+      item.next = function () {}
+    }
+
+    return new Section(item, this.hooks)
+  }
+
   unpack (_package, resolver, canonical) {
     this.items = _package.spine
     this.manifest = _package.manifest
@@ -46,7 +98,7 @@ class Spine {
     this.length = this.items.length
 
     this.items.forEach((item, index) => {
-        // console.debug('spine unpack ', item, index)
+      // console.debug('spine unpack ', item, index)
       const manifestItem = this.manifest[item.idref]
       let spineItem
 

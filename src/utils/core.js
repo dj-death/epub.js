@@ -239,6 +239,20 @@ export function indexOfSorted (item, array, compareFunction, _start, _end) {
     return indexOfSorted(item, array, compareFunction, start, pivot)
   }
 }
+
+export function getComputedStyleOf (element, prop, windowElm) {
+  windowElm = windowElm || window
+
+  if (element.currentStyle) {
+    return prop ? element.currentStyle[prop] : element.currentStyle
+  } else if (windowElm.getComputedStyle && windowElm.getComputedStyle(element, null)) {
+    const values = windowElm.getComputedStyle(element, null)
+
+    return prop ? values.getPropertyValue(prop) : values
+  } else {
+    return prop ? element.style[prop] : element.style
+  }
+}
 /**
  * Find the bounds of an element
  * taking padding and margin into account
@@ -247,7 +261,7 @@ export function indexOfSorted (item, array, compareFunction, _start, _end) {
  * @memberof Core
  */
 export function bounds (el) {
-  const style = window.getComputedStyle(el)
+  const style = getComputedStyleOf(el)
   const widthProps = ['width', 'paddingRight', 'paddingLeft', 'marginRight', 'marginLeft', 'borderRightWidth', 'borderLeftWidth']
   const heightProps = ['height', 'paddingTop', 'paddingBottom', 'marginTop', 'marginBottom', 'borderTopWidth', 'borderBottomWidth']
 
@@ -276,7 +290,7 @@ export function bounds (el) {
  * @memberof Core
  */
 export function borders (el) {
-  const style = window.getComputedStyle(el)
+  const style = getComputedStyleOf(el)
   const widthProps = ['paddingRight', 'paddingLeft', 'marginRight', 'marginLeft', 'borderRightWidth', 'borderLeftWidth']
   const heightProps = ['paddingTop', 'paddingBottom', 'marginTop', 'marginBottom', 'borderTopWidth', 'borderBottomWidth']
 
