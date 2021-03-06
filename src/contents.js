@@ -659,7 +659,10 @@ class Contents {
               console.error(e, e.stack)
             }
           } else {
-            position = range.getBoundingClientRect()
+            // position = range.getBoundingClientRect()
+            // range.toString() might be an empty string and range.getBoundingClientRect() returns a all-zeros position.
+            // Thus, we use the parent element containing the range to get a valid bounding rect.
+            position = range.startContainer.parentElement.getBoundingClientRect()
           }
         }
       }
@@ -776,9 +779,9 @@ class Contents {
     if (Object.prototype.toString.call(rules) === '[object Array]') {
       for (let i = 0, rl = rules.length; i < rl; i++) {
         let j = 1
-                let rule = rules[i]
-                const selector = rules[i][0]
-                let propStr = ''
+        let rule = rules[i]
+        const selector = rules[i][0]
+        let propStr = ''
         // If the second argument of a rule is an array of arrays, correct our variables.
         if (Object.prototype.toString.call(rule[1][0]) === '[object Array]') {
           rule = rule[1]
@@ -1035,7 +1038,7 @@ class Contents {
     if (width >= 0) {
       this.width(width)
       viewport.width = width
-      this.css('padding', '0 ' + (width / 12) + 'px')
+      // this.css('padding', '0 ' + (width / 12) + 'px')
     }
 
     if (height >= 0) {

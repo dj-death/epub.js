@@ -99,18 +99,21 @@ class Layout {
 	 */
   calculate (_width, _height, _gap) {
     let divisor = 1
-    let gap = _gap || 0
+    let gap = _gap || 20
 
     // -- Check the width and create even width columns
     // var fullWidth = Math.floor(_width);
     let width = _width
-    const height = _height
+    let height = _height
 
-    const section = Math.floor(width / 12)
+    // var section = Math.floor(width / 12);
 
     let columnWidth
+    let columnHeight
     let spreadWidth
+    let spreadHeight
     let pageWidth
+    let pageHeight
     let delta
 
     if (this._spread && width >= this._minSpreadWidth) {
@@ -119,9 +122,11 @@ class Layout {
       divisor = 1
     }
 
-    if (this.name === 'reflowable' && this._flow === 'paginated' && !(_gap >= 0)) {
-      gap = ((section % 2 === 0) ? section : section - 1)
-    }
+    /*
+		if (this.name === "reflowable" && this._flow === "paginated" && !(_gap >= 0)) {
+			gap = ((section % 2 === 0) ? section : section - 1);
+		}
+		*/
 
     if (this.name === 'pre-paginated') {
       gap = 0
@@ -134,16 +139,22 @@ class Layout {
       // gap = gap / divisor;
       columnWidth = (width / divisor) - gap
       pageWidth = columnWidth + gap
+      columnHeight = (height / divisor) - gap
+      pageHeight = columnHeight + gap
     } else {
       columnWidth = width
       pageWidth = width
+      columnHeight = height
+      pageHeight = height
     }
 
     if (this.name === 'pre-paginated' && divisor > 1) {
       width = columnWidth
+      height = columnHeight
     }
 
     spreadWidth = (columnWidth * divisor) + gap
+    spreadHeight = (columnHeight * divisor) + gap
 
     delta = width
 
@@ -151,9 +162,12 @@ class Layout {
     this.height = height
     this.spreadWidth = spreadWidth
     this.pageWidth = pageWidth
+    this.spreadHeight = spreadHeight
+    this.pageHeight = pageHeight
     this.delta = delta
 
     this.columnWidth = columnWidth
+    this.columnHeight = columnHeight
     this.gap = gap
     this.divisor = divisor
 
@@ -171,9 +185,12 @@ class Layout {
       width,
       height,
       spreadWidth,
+      spreadHeight,
       pageWidth,
+      pageHeight,
       delta,
       columnWidth,
+      columnHeight,
       gap,
       divisor
     })
